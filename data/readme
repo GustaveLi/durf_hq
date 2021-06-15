@@ -2,8 +2,9 @@ This folder contains raw data for various project and task
 1. mydata.npy		          # dummy data in numpy ndarray .npy format
 2. triad_dataset.nc               # 100,000 off-equilibrium geometries of carotenoid-porphyrin-C60 triad
 3. triad_forcefield_ground.prmtop # the ground state force field for the triad_dataset.nc
-4. triad_sample.txt		  # triad data in .txt format suitable for quantum chemistry calculation
-5. triad_sample.pdb 		  # triad data in .pdb format
+4. triad_sample.txt		  # sample triad data in .txt format suitable for quantum chemistry calculation
+5. triad_sample.pdb 		  # sample triad data in .pdb format
+6. triad_sample.xyz		  # sample triad data in .xyz format
 
 
 # More data set for other molecular data can be found at :
