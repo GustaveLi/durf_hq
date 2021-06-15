@@ -5,7 +5,7 @@ DURF_HQ
 [![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/DURF_HQ/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/DURF_HQ/branch/master)
 
 
-The headquarter for all DURF projects @ The Sun Group
+The headquarter of all DURF projects @ The Sun Group NYUSH
 
 ### Copyright
 
