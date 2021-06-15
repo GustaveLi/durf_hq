@@ -1,0 +1,14 @@
+This folder contains raw data for various project and task
+1. mydata.npy		          # dummy data in numpy ndarray .npy format
+2. triad_dataset.nc               # 100,000 off-equilibrium geometries of carotenoid-porphyrin-C60 triad
+3. triad_forcefield_ground.prmtop # the ground state force field for the triad_dataset.nc
+
+
+
+# More data set will be included :
+-> ANI-1 dataset of 20 millions off-equilibrium geometries of organic molecule.
+	https://github.com/isayev/ANI1_dataset.
+
+-> rMD 17 dataset for molecular dynamics data from 17 different molecules.
+	https://figshare.com/articles/dataset/Revised_MD17_dataset_rMD17_/12672038
+	Note: the original MD17 dataset is now obsolete.
