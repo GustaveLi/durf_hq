@@ -1,7 +1,7 @@
 import pyanitools as pya
 
 # Set the HDF5 file containing the data
-hdf5file = 'D:/DURF/python_programm/ani_gdb_s01.h5'
+hdf5file = 'D:/DURF_datasets/ANI1/ani_gdb_s01.h5'
 
 # Construct the data loader class
 adl = pya.anidataloader(hdf5file)
