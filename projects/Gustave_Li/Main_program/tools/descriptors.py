@@ -141,7 +141,6 @@ class Descriptors():
         df : TYPE Pandas DataFrame
 
         """
-        print(descriptor)
         df = pd.DataFrame(descriptor)
         return df
         
