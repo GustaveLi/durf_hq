@@ -8,7 +8,7 @@ Created on Mon Jun 28 12:21:03 2021
 import nglview as ngl
 import mdtraj as md
 class Visualization():
-    def _init_(self, traj_file, top_file):
+    def __init__(self, traj_file, top_file):
         self.traj_file = traj_file
         self.top_file = top_file
         self.traj = md.load(traj_file, top=top_file)

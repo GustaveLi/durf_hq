@@ -133,7 +133,7 @@ class Descriptors():
 
         Parameters
         ----------
-        **descriptor : TYPE dictionary
+        **descriptor : TYPE Dictionary
             DESCRIPTION. Key is the descriptor name, value is the numpy array
 
         Returns
