@@ -26,15 +26,15 @@ The Carotenoid-Porphyrin-\(\text{C}_{60}\) (\(\text{CPC}_{60}\)) triad molecule 
     \label{fig:CPC60}
 \end{figure}
 
-However, Manna et al. reported that the triad spatial conformation strongly affects the process of charge separation and concluded that the linear conformations have better charge separation effeciency over the bent conformations. Olguin et al. further investigated the effect of structural changes on \(\text{CPC}_{60}\) charge transfer states, they summarized several factors influencing charge transfer, including donor-acceptor distance, distances and torsions between the three components. In summary, the charge transfer process in \(\text{CPC}_{60}\) is very conformation-dependent,  the molecular structure has a rather dramatic effect on the the charge transfer performance. Thus, finding the optimal structure for charge transfer is critical.
+However, Manna et al. reported that the triad spatial conformation strongly affects the process of charge separation and concluded that the linear conformations have better charge separation effeciency over the bent conformations \cite{MannaArun}. Olguin et al. further investigated the effect of structural changes on \(\text{CPC}_{60}\) charge transfer states, they summarized several factors influencing charge transfer, including donor-acceptor distance, distances and torsions between the three components \cite{OlguinMarco}. In summary, the charge transfer process in \(\text{CPC}_{60}\) is very conformation-dependent,  the molecular structure has a rather dramatic effect on the the charge transfer performance. Thus, finding the optimal structure for charge transfer is critical.
 
-Thanks to the development of computer sciences, tens of thousands of possible \(\text{CPC}_{60}\) molecules can be generated based on molecular dynamics. Considering the heavy computing load of calculation and the complexity of the \(\text{CPC}_{60}\) molecule, it is unrealistic to calculate the charge transfer rate for all the molecules. Researchers are currently working on different directions to address this issue. Brian and co-worker proposed novel formulations for calculating charge transfer rate, which reduced a maximum of 80\% of computational cost. In this project, we aim to make use of machine learning to cluster the many molecules into different groups. By taking the cluster center as representation conformations, we expect the computational cost to decrease for a great amount while maintaining as much structural information as possible.
+Thanks to the development of computer sciences, tens of thousands of possible \(\text{CPC}_{60}\) molecules can be generated based on molecular dynamics. Considering the heavy computing load of calculation and the complexity of the \(\text{CPC}_{60}\) molecule, it is unrealistic to calculate the charge transfer rate for all the molecules. Researchers are currently working on different directions to address this issue. Brian and co-worker proposed novel formulations for calculating charge transfer rate, which reduced a maximum of 80\% of computational cost \cite{BrianDomi}. In this project, we aim to make use of machine learning to cluster the many molecules into different groups. By taking the cluster center as representation conformations, we expect the computational cost to decrease for a great amount while maintaining as much structural information as possible.
 \pagebreak
 
 \section{Triad molecule visualization}
-The triad molecule trajectory was loaded with the python \texttt{mdtraj} module, and the \texttt{nglview} module was applied for visualization. The ball-and-stick representation of the 10,000 triad molecules in the dataset was obtained, which is similar to that in Figure~\ref{fig:CPC60}. 
+The triad molecule trajectory was loaded with the python \texttt{mdtraj} module, and the \texttt{nglview} module was applied for visualization. The ball-and-stick representation of the 100,000 triad molecules in the dataset was obtained, which is similar to that in Figure~\ref{fig:CPC60}. 
 
-All the 10,000 molecules follow the same C-P-\(\text{C}_{60}\) sequence, but the overall conformation varies from bent to linear. Torsion around carotenoid-porphyrin and porphyrin-\(\text{C}_{60}\) also exists.
+All the 100,000 molecules follow the same C-P-\(\text{C}_{60}\) sequence, but the overall conformation varies from bent to linear. Torsion around carotenoid-porphyrin and porphyrin-\(\text{C}_{60}\) also exists.
 
 \section{Descriptors}
 The goal of this project is to cluster the thousands of triad molecules, so different descriptors are needed to represent the features of molecules for machine learning algorithms to work. 
@@ -71,6 +71,8 @@ The key atoms chosen for descriptors are \(\text{C}_{33}\), \(\text{C}_{21}\), \
     \label{tab:descriptors}
 \end{table}
 
-
+\pagebreak
+\bibliographystyle{unsrt}
+\bibliography{references.bib}
 
 \end{document}
