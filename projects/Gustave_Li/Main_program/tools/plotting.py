@@ -1,4 +1,5 @@
 from bokeh.plotting import figure, show
+from bokeh.models.tools import *
 from bokeh.io import output_notebook
 
 def dimreduct(Method, array):
@@ -22,7 +23,11 @@ def dimreduct(Method, array):
     if array.shape[-1]==2:        
         x = array[:, 0].reshape(len(array), )
         y = array[:, 1].reshape(len(array), )
-        p = figure(title=Method, x_axis_label='dim1', y_axis_label='dim2')
+        p = figure(title=Method, 
+                   x_axis_label='dim1', 
+                   y_axis_label='dim2', 
+                   tools=[BoxZoomTool(), HoverTool(), PanTool(), ResetTool(), SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')]
+                  )
         p.circle(x, y)
         output_notebook()
         show(p)

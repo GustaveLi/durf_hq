@@ -98,7 +98,7 @@ class Descriptors():
         if len(atom_names)==4:
             idx_list = Descriptors.index_finder(self, atom_names)
             torsion = md.compute_dihedrals(self.traj, idx_list)
-            return torsion.reshape(len(torsion),)
+            return np.abs(torsion.reshape(len(torsion),))
         else:
             print('Four atoms are expected for dihedral calculation')
      
