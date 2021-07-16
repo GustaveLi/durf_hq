@@ -38,16 +38,17 @@ elif method_name.lower() == 'tsne_optimized':
                      init='pca')
     result_arr = tsne_optm.fit_transform(d_array)
     
-elif method_name.lower() == 'pca_tsne_xyz':
+elif method_name.lower() == 'tsne_xyz':
     # Load the xyz file on disk
     xyz_dir = '/gpfsnyu/scratch/hl4212'
     xyz_path = f'{xyz_dir}/xyz_aligned.npy'
     xyz = np.load(xyz_path)
     
     xyz_pipeline = Pipeline([
-        ('pca', PCA(n_components=50)),
+        #('pca', PCA(n_components=50)),
         ('tSNE_opt', TSNE(n_components=2,
-                          perplexity=50)),
+                          learning_rate=(len(xyz)//12), 
+                          perplexity=100)),
         ])
     
     result_arr = xyz_pipeline.fit_transform(xyz)

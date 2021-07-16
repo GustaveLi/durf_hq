@@ -91,8 +91,8 @@ class Descriptors():
 
         Returns
         -------
-        angle : TYPE 1-D Numpy array
-            DESCRIPTION. The dihedrals are in radians
+        angle : TYPE 1D Numpy array
+            DESCRIPTION. The absolute value of the dihedrals. The dihedrals are in radians
 
         """
         if len(atom_names)==4:
