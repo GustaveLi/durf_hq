@@ -3,6 +3,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage[caption = false]{subfig}
 \usepackage{amsmath}
 \usepackage{indentfirst}
 \usepackage{hyperref}
@@ -61,15 +62,70 @@ The key atoms chosen for descriptors are \(\text{C}_{33}\), \(\text{C}_{21}\), \
        Angle\_1 & The angle between atoms \(\text{C}_{33}\)-\(\text{C}_{96}\)-\(\text{C}_{128}\) \\
        Angle\_2 & The angle between atoms \(\text{C}_{33}\)-\(\text{C}_{69}\)-\(\text{C}_{96}\) \\
        Angle\_3 & The angle between atoms \(\text{C}_{69}\)-\(\text{C}_{96}\)-\(\text{C}_{128}\) \\
-       Dihedral\_1 & The dihedral between atoms \(\text{C}_{21}\)-\(\text{C}_{61}\)-\(\text{C}_{66}\)-\(\text{C}_{65}\) \\
-       Dihedral\_2 & The dihedral between atoms \(\text{C}_{89}\)-\(\text{N}_{6}\)-\(\text{C}_{95}\)-\(\text{C}_{96}\) \\
+       Dihedral\_1 & The absolute valute of dihedral between atoms \(\text{C}_{21}\)-\(\text{C}_{61}\)-\(\text{C}_{66}\)-\(\text{C}_{65}\) \\
+       Dihedral\_2 & The absolute valute of dihedral between atoms \(\text{C}_{89}\)-\(\text{N}_{6}\)-\(\text{C}_{95}\)-\(\text{C}_{96}\) \\
        RMSD\_Linear & RMSD for the conformation to the Linear triad \\
        RMSD\_Bent & RMSD for the conformation to the Bent triad \\
        \hline \hline
     \end{tabular}
     
     \label{tab:descriptors}
+    \vspace{1ex}
+    {\raggedright Note: the linear and bent conformation was determined by the overall bending angle of the triad molecule, described by the Angle\_1 descriptor. For our triad dataset, we defined the triad indexing 88213 as the linear model, which has an overall angle of \(3.10\,rad\). The bent was defined as the 29685th frame, which has an angle of \(0.36\,rad\). \par}
 \end{table}
+
+\pagebreak
+
+\section{Dimensionality reduction}
+
+Each of the triad molecules consist of 207 atoms, thus there are 621 (\(207 \times 3\)) coordinate features in one molecule. Such huge number of features not only makes clustering algorithms work very slow, but they can make it harder to find the optimal clustering result. The difficulty caused by high dimensionality is referred to as \textit{the curse of dimensionality}~\cite{GeronAurelien}. Although we have reduced the dimensionality to 8 by finding descriptors of the molecular structure, visualization of the 8D descriptors is still unachievable. In the face of such situation, dimensionality reduction plays its role by reducing the dimensionality of dataset significantly (to 2 or 3 for visualization) while preserving the information from original dataset~\cite{GlielmoAldo}.
+
+\subsection{Dimensionality reduction algorithms and hyperparameters}
+
+\noindent All the dimensionality reduction processes are implemented by the Python \href{https://scikit-learn.org/stable/user_guide.html}{sklearn module}.
+\begin{itemize}
+    \item \textit{Principle Components Analysis} (PCA) 
+    \begin{itemize}
+        \item With a given reduced dimensionality \textit{k}, PCA algorithm identifies the first \textit{k} principle components that accounts for the largest variance in the dataset. Then it projects all the data points linearly to the hyperplane defined by the first \textit{k} principle components.
+        \item The hyperparameters follows the default settings in sklearn module, the reduced dimensionality is set to 2.
+    \end{itemize}
+    
+    \item \textit{kernel Principle Components Analysis} (kPCA)
+    \begin{itemize}
+        \item The kernel functions are applied to the instances and map them into a very high dimentional space (feature space), enabling complex nonlinear projections for dimensionality reduction. The linear projection in the high-diomensional feature space corresponds to a complex nonlinear projection in the original space.
+        \item The hyperparameters follows the default settings in sklearn module, the reduced dimensionality is set to 2. Kernels applied in this project are polynomial and Gaussian RBF kernels. 
+    \end{itemize}
+    
+    \item \textit{t-distributed Stochastic Neighbor Embedding} (t-SNE)
+    \begin{itemize}
+        \item t-SNE estimates the probability of each point to be a neighbor of each other point, from the distances in the high dimensional space.It then obtains the coordinates in a reduced \textit{k}-dimensional space in which these probabilities are as similar as possible to the one in the original space. It keeps similar instances close while dissimilar instances apart.
+        \item t-SNE is famous by its high flexbility, in other words, the dimensionality reduction result is highly sensitive to the choice of hyperparameters. In this project, we adopted the hyperparameter settings given by Kobak Dmitry et al~\cite{KobakDmitry} which performed well in separating the different conformations. The perplexity was set to 30, the learning rate was tuned to \(  \frac{1}{12} \) of the total number of instances. Reduced dimensionality was set to 2.
+    \end{itemize}
+    
+\end{itemize}
+\pagebreak
+
+\subsection{Dimensionality reduction on descriptors}
+\begin{figure}[H]
+    \centering
+    \subfloat[PCA]{\includegraphics[width=0.5\linewidth, height=0.4\linewidth]{projects/Gustave_Li/Main_program/results/dimensionality_reduction/dimreduct_pca.png}}  
+    \subfloat[kPCA\_poly]{\includegraphics[width=0.5\linewidth, height=0.4\linewidth]{projects/Gustave_Li/Main_program/results/dimensionality_reduction/dimreduct_kpca_poly.png}}  \\
+    \subfloat[kPCA\_rbf]{\includegraphics[width=0.5\linewidth, height=0.4\linewidth]{projects/Gustave_Li/Main_program/results/dimensionality_reduction/dimreduct_kpca_rbf.png}}  
+    \subfloat[t-SNE]{\includegraphics[width=0.5\linewidth, height=0.4\linewidth]{projects/Gustave_Li/Main_program/results/dimensionality_reduction/dimreduct_tsne_optm.png}}
+    \caption{Dimensionality reduction results for descriptors. The triad indexing 87507, which lies on the far left of the graph, was chosen for the RMSD reference frame.  }
+    \label{fig:dimreduct_descriptors}
+\end{figure}
+
+\subsection{Dimensionality reduction on coordinates}
+\begin{figure}[H]
+    \centering
+    \subfloat[PCA]{\includegraphics[width=0.5\linewidth, height=0.4\linewidth]{projects/Gustave_Li/Main_program/results/dimensionality_reduction/dimreduct_pca.png}}  
+    \subfloat[kPCA\_poly]{\includegraphics[width=0.5\linewidth, height=0.4\linewidth]{projects/Gustave_Li/Main_program/results/dimensionality_reduction/dimreduct_kpca_poly.png}}  \\
+    \subfloat[kPCA\_rbf]{\includegraphics[width=0.5\linewidth, height=0.4\linewidth]{projects/Gustave_Li/Main_program/results/dimensionality_reduction/dimreduct_kpca_rbf.png}}  
+    \subfloat[t-SNE]{\includegraphics[width=0.5\linewidth, height=0.4\linewidth]{projects/Gustave_Li/Main_program/results/dimensionality_reduction/dimreduct_tsne_optm.png}}
+    \caption{Dimensionality reduction results for descriptors. The triad indexing 87507, which lies on the far left of the graph, was chosen for the RMSD reference frame.  }
+    \label{fig:dimreduct_descriptors}
+\end{figure}
 
 \pagebreak
 \bibliographystyle{unsrt}
