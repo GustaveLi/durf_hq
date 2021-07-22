@@ -8,7 +8,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('method', type=str, help='Method used for dim_reduct')
 args = parser.parse_args()
-method_name=args.method
+method_name = args.method
 
 # Specify target directory for file reading and writing
 results_dir = '/xspace/hl4212/durf_hq/projects/Gustave_Li/Main_program/results/dimensionality_reduction'
@@ -41,12 +41,12 @@ elif method_name.lower() == 'tsne_standard' or method_name.lower() == 'tsne_stan
     result_arr = tsne_std.fit_transform(arr)
     
 elif method_name.lower() == 'tsne_optimized' or method_name.lower() == 'tsne_optimized_xyz':
-    tsne_optm = TSNE(n_components=2, perplexity=30, learning_rate=(len(d_array)//12), \
+    tsne_optm = TSNE(n_components=2, perplexity=50, learning_rate=(len(arr)//12), \
                      init='pca')
     result_arr = tsne_optm.fit_transform(arr)
      
 # Save the data back to disk
-result_path = f'{results_dir}/dimreduct_{method_name}.npy'
-np.save(result_path, result_arr)
+#result_path = f'{results_dir}/dimreduct_{method_name}.npy'
+#np.save(result_path, result_arr)
 
 

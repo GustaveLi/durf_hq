@@ -11,7 +11,7 @@ traj_path = f'{file_dir}/triad_dataset_aligned.nc'
 top_path = f'{file_dir}/triad_forcefield_ground.prmtop'
 traj=md.load(traj_path, top=top_path)
 
-def RMSD_map(array, title='RMSD_map', save_dir=None, ref_frame=0):
+def RMSD_map(array, title='RMSD_map', ref_frame=0, save_dir=None):
     """
      Visualize the results from given 2D array, color each point with rmsd value
 
@@ -37,13 +37,16 @@ def RMSD_map(array, title='RMSD_map', save_dir=None, ref_frame=0):
         y = array[:, 1].reshape(len(array), )
         rmsd_array = md.rmsd(traj, traj, frame=ref_frame)
         source = ColumnDataSource(dict(x=x,y=y, rmsd_array=rmsd_array))
-        mapper = linear_cmap(field_name='rmsd_array', palette=Plasma256 ,low=min(rmsd_array) ,high=max(rmsd_array))
+        mapper = linear_cmap(field_name='rmsd_array', palette=Plasma256 ,\
+                             low=min(rmsd_array) ,high=max(rmsd_array))
         p = figure(title=title, 
                    x_axis_label='dim1', 
                    y_axis_label='dim2', 
-                   tools=[BoxZoomTool(), HoverTool(), PanTool(), ResetTool(), SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')]
+                   tools=[BoxZoomTool(), HoverTool(), PanTool(), ResetTool(), \
+                          SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')]
                   )
-        p.circle(x='x', y='y', line_color=mapper, fill_color=mapper, source=source, size=3)
+        p.circle(x='x', y='y', line_color=mapper, fill_color=mapper, 
+                 source=source, alpha=0.1, size=3)
         color_bar = ColorBar(color_mapper=mapper['transform'], width=8)
         p.add_layout(color_bar, 'right')
         p.add_layout(Title(text="RMSD", align="center"), "right")
@@ -53,3 +56,27 @@ def RMSD_map(array, title='RMSD_map', save_dir=None, ref_frame=0):
             export_png(p, filename=f'{save_dir}/{title}.png')
     else:
         print('Sorry, only dimension reduced to 2D accepted.')
+        
+def cluster_map(instance_array, label_array, center_array=None, title='Cluster_map',save_dir=None):
+    x = instance_array[:, 0].reshape(len(instance_array), )
+    y = instance_array[:, 1].reshape(len(instance_array), )
+    source = ColumnDataSource(dict(x=x,y=y, label_array=label_array))
+    mapper = linear_cmap(field_name='label_array', palette=Plasma256 ,\
+                         low=min(label_array) ,high=max(label_array))
+    p = figure(title=title, 
+               x_axis_label='dim1', 
+               y_axis_label='dim2', 
+               tools=[BoxZoomTool(), HoverTool(), PanTool(), ResetTool(), \
+                      SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')],
+               )
+    p.circle(x='x', y='y', line_color=mapper, fill_color=mapper, 
+             source=source, alpha=0.1,size=3)
+    if center_array.all() != None:
+        x_center = center_array[:, 0].reshape(len(center_array), )
+        y_center = center_array[:, 1].reshape(len(center_array), )
+        p.triangle(x=x_center, y=y_center, line_color='green', fill_color='green', size=10)
+    color_bar = ColorBar(color_mapper=mapper['transform'], width=8)
+    p.add_layout(color_bar, 'right')
+    p.add_layout(Title(text="Cluster #", align="center"), "right")
+    output_notebook()
+    show(p)
