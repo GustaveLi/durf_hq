@@ -1,0 +1,9 @@
+﻿Partition,Node,#_of_cores,#_of_instances,mem_(GB),job_name,run_time
+Argon,Argon21,5,"100,000",100,dimreduct_tsne_xyz,00:55:35
+Argon,Argon21,5,"100,000",100,dimreduct_kPCA_poly_descriptors,00:15:43
+Argon,Argon21,5,"100,000",100,dimreduct_kPCA_poly_xyz,00:14:57
+Argon,Argon21,5,"100,000",100,dimreduct_tsne_descriptors,00:06:37
+Argon,Argon21,5,"100,000",100,dimreduct_kPCA_rbf_xyz,00:06:01
+Argon,Argon21,5,"100,000",100,dimreduct_kPCA_rbf_descriptors,00:05:12
+Argon,Argon21,5,"100,000",100,dimreduct_PCA_xyz,00:00:25
+Argon,Argon21,5,"100,000",100,dimreduct_PCA_descriptors,00:00:24
