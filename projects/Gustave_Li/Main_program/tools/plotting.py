@@ -20,7 +20,7 @@ def RMSD_map(array, title='RMSD_map', ref_frame=0, save_dir=None):
     title : TYPE Str, optional
         DESCRIPTION. Specify the title of the plot. The default is 'RMSD_map'.
     array : TYPE Numpy array, shape=(num of instances, 2)
-        DESCRIPTION. The array used for plotting
+        DESCRIPTION. The array used for plotting (dimension reduced to 2)
     save_dir : TYPE file path (string), optional
         DESCRIPTION. If specified, the plot will be saved to the given directory. The default is None.
     ref_frame : TYPE int, optional
@@ -28,7 +28,7 @@ def RMSD_map(array, title='RMSD_map', ref_frame=0, save_dir=None):
 
     Returns
     -------
-    None. Only prints (and saves) the plot
+    None. Prints (and saves) the plot
 
     """
     # check for dimensionality
@@ -58,6 +58,27 @@ def RMSD_map(array, title='RMSD_map', ref_frame=0, save_dir=None):
         print('Sorry, only dimension reduced to 2D accepted.')
         
 def cluster_map(instance_array, label_array, center_array=None, title='Cluster_map',save_dir=None):
+    """
+    Displays differnet clusters in different colors, highlight the position of cluster centers (if provided)
+
+    Parameters
+    ----------
+    instance_array : TYPE Numpy array, shape=(num_of_instances,2)
+        DESCRIPTION. The dataset (2D) used for clustering
+    label_array : TYPE Numpy array, shape=(num_of_instances,)
+        DESCRIPTION. Labels generated from clustering algorithms
+    center_array : TYPE Numpy array, shape=(num_of_clusters, 2) , optional
+        DESCRIPTION. Cluster centers generated from clustering algorithms. Some algorithms don't give cluster centers. The default is None.
+    title : TYPE String, optional
+        DESCRIPTION. Name for the plot. The default is 'Cluster_map'.
+    save_dir : TYPE File path (string), optional
+        DESCRIPTION. If specified, the plot will be saved to the given directory. The default is None.
+
+    Returns
+    -------
+    None. Prints (and saves) the plot
+
+    """
     x = instance_array[:, 0].reshape(len(instance_array), )
     y = instance_array[:, 1].reshape(len(instance_array), )
     source = ColumnDataSource(dict(x=x,y=y, label_array=label_array))
@@ -70,13 +91,17 @@ def cluster_map(instance_array, label_array, center_array=None, title='Cluster_m
                       SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')],
                )
     p.circle(x='x', y='y', line_color=mapper, fill_color=mapper, 
-             source=source, alpha=0.1,size=3)
-    if center_array.all() != None:
+             source=source, alpha=0.5,size=3)
+    try:
         x_center = center_array[:, 0].reshape(len(center_array), )
         y_center = center_array[:, 1].reshape(len(center_array), )
         p.triangle(x=x_center, y=y_center, line_color='green', fill_color='green', size=10)
+    except:
+        pass
     color_bar = ColorBar(color_mapper=mapper['transform'], width=8)
     p.add_layout(color_bar, 'right')
     p.add_layout(Title(text="Cluster #", align="center"), "right")
     output_notebook()
     show(p)
+    if save_dir != None:
+        export_png(p, filename=f'{save_dir}/{title}.png')
