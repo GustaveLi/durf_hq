@@ -1,0 +1,2 @@
+The .npy and .png files for dimensionality reduction has now been moved to /xspace/hl4212/results/dimensionality_reduction directory.
+
