@@ -1,6 +1,7 @@
 from bokeh.plotting import figure, show
 from bokeh.models.tools import *
 from bokeh.models import ColumnDataSource, ColorBar, Title
+from bokeh.layouts import row
 from bokeh.io import output_notebook, export_png
 from bokeh.transform import linear_cmap
 from bokeh.palettes import Plasma256
@@ -105,3 +106,49 @@ def cluster_map(instance_array, label_array, center_array=None, title='Cluster_m
     show(p)
     if save_dir != None:
         export_png(p, filename=f'{save_dir}/{title}.png')
+        
+def preclustering(x_axis, dataset_arr, tags=None):
+    if len(dataset_arr[0]) == 2:
+        p1 = figure(x_axis_label='Num of clusters',
+                    y_axis_label='Benchmark',
+                    )
+        p2 = figure(x_axis_label='Num of clusters',
+                    y_axis_label='Benchmark',
+                    )
+        p1.line(x=x_axis, y=dataset_arr[: , 0], legend_label = 'Inertia', line_width=2)
+        p2.line(x=x_axis, y=dataset_arr[: , 1], legend_label = 'Silhouette Score', line_width=2)
+        output_notebook()
+        show(row(p1,p2))
+        
+    elif len(dataset_arr[0]) == 3:
+        p1 = figure(x_axis_label='Num of clusters',
+                    y_axis_label='Benchmark',
+                    )
+        p2 = figure(x_axis_label='Num of clusters',
+                    y_axis_label='Benchmark',
+                    )
+        p1.line(x=x_axis, y=dataset_arr[: , 0], legend_label = 'AIC', 
+                line_color='blue', line_width=2)
+        p1.line(x=x_axis, y=dataset_arr[: , 1], legend_label = 'BIC', 
+                line_color='red', line_width=2)
+        p2.line(x=x_axis, y=dataset_arr[: , 2], legend_label = 'Silhouette Score', 
+                line_width=2)
+        output_notebook()
+        show(row(p1,p2))
+        
+    elif len(dataset_arr[0]) == 1:
+        source=ColumnDataSource(dict(tags=tags, x_axis=x_axis, dataset_arr=dataset_arr[: , 0]))
+        p = figure(x_axis_label='Sequence of data points',
+                   y_axis_label='Benchmark',
+                   tools=[BoxZoomTool(), PanTool(), ResetTool(), 
+                          SaveTool(), WheelZoomTool(), 
+                          HoverTool(tooltips=[('data y', '$y'),
+                                              ('eps_min_clus_size_min_sample', '@tags')
+                                              ]
+                                    )
+                          ]
+                   )
+        p.line('x_axis', 'dataset_arr', legend_label = 'Silhouette Score', source = source,
+               line_width=2)
+        output_notebook()
+        show(p)
