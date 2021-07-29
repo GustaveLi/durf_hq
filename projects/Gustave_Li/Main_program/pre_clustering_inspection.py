@@ -6,10 +6,7 @@ Created on Wed Jul 21 16:36:49 2021
 """
 
 import numpy as np
-from sklearn.cluster import KMeans
-from sklearn.mixture import GaussianMixture
-#from hdbscan import HDBSCAN
-from sklearn_extra.cluster import KMedoids
+from tools.clustering import Preclustering
 import argparse
 
 # Add a parser to parse the clustering method and target provided in the shell 
@@ -21,52 +18,65 @@ method_name = args.method
 target_name = args.target
 
 # File path to read files
-read_dir = '/xspace/hl4212/durf_hq/projects/Gustave_Li/Main_program/results/dimensionality_reduction'
+read_dir = '/xspace/hl4212/results/dimensionality_reduction'
 
 # File path to write files
-write_dir = '/xspace/hl4212/durf_hq/projects/Gustave_Li/Main_program/results/clustering'
+write_dir = '/xspace/hl4212/results/clustering/preclustering'
 
 # Load array for clustering
 file_path = f'{read_dir}/dimreduct_{target_name}.npy'
 arr = np.load(file_path)
 
-# Select estemators   
-if method_name.lower() == 'kmeans':
-    estimator = KMeans()
-    
-elif method_name.lower() == 'kmedoids':
-    estimator = KMedoids(init='k-medoids++')
-    
-elif method_name.lower() == 'gmm':
-    estimator = GaussianMixture(n_init=10)
-    
-# Loop for different components, get evaluators (inertia or bic) and corresponding cluster number
-cluster_nums = []
-evaluators = []
+# Load modules
+evaluator = Preclustering(arr)
+dispatcher = {'kmeans':evaluator.kmeans,
+              'kmedoids':evaluator.kmedoids,
+              'gmm':evaluator.gmm,
+              'hdbscan':evaluator.hdbscan
+              }
 
-for a in range(2, 21, 2): 
-    cluster_nums.append(a)
+# Pre-clustering and calculate several benchmarks
+results = []
+
+if method_name != 'hdbscan':
+    ccenters_list = []
+    for cluster_num in range(2,21,2):
+        result, ccenters = dispatcher[method_name](cluster_num)
+        results.append(result)
+        ccenters_list.append(ccenters)
+        
+else:
+    tags = []
+    for eps in [1,10,100,500]:
+        for min_clus_size in range(10,100,20):
+            for min_sample in [1,10,100]:
+                tag = f'{eps}_{min_clus_size}_{min_sample}'
+                result = dispatcher[method_name](min_clus_size, min_sample, eps)
+                tags.append(tag)
+                results.append(result)
+
+# Save the results (and tags) back to disk
+results_arr = np.array(results)
+results_path = f'{write_dir}/{target_name}_{method_name}_results.npy'
+np.save(results_path,results_arr)
+
+try:
+    ccenters_arr = np.array(ccenters_list)
+    ccenters_path = f'{write_dir}/{target_name}_{method_name}_ccenters.npy'
+    np.save(ccenters_path,ccenters_arr)
+except:
+    pass
+
+try:
+    tags_arr = np.array(tags)
+    tags_path = f'{write_dir}/{target_name}_{method_name}_tags.npy'
+    np.save(tags_path,tags_arr)
+except:
+    pass
+                
     
-    try: # for kmeans & kmedoids
-        estimator.set_params(n_clusters=a)
-        estimator.fit_predict(arr)
-        evaluator = estimator.inertia_
-    except: # for gmm
-        estimator.set_params(n_components=a)
-        estimator.fit_predict(arr)
-        evaluator = estimator.bic(arr)
-    
-    evaluators.append(evaluator)
+   
 
-# Convert the lists to numpy array & save to disk
-
-cluster_num_arr = np.array(cluster_nums)
-cluster_num_arr_path = f'{write_dir}/{target_name}_{method_name}_cluster_num_arr.npy'
-np.save(cluster_num_arr_path, cluster_num_arr)
-
-evaluator_arr = np.array(evaluators)
-evaluator_arr_path =  f'{write_dir}/{target_name}_{method_name}_evaluator_arr.npy'
-np.save(evaluator_arr_path, evaluator_arr)
 
     
 
