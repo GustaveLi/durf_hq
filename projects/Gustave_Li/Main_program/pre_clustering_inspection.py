@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jul 21 16:36:49 2021
-
-@author: gqmli
-"""
-
 import numpy as np
 from tools.clustering import Preclustering
 from sklearn.preprocessing import MinMaxScaler

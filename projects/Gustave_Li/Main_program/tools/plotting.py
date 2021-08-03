@@ -1,10 +1,11 @@
 from bokeh.plotting import figure, show
 from bokeh.models.tools import *
-from bokeh.models import ColumnDataSource, ColorBar, Title
+from bokeh.models import ColumnDataSource, ColorBar, Title, Label, LabelSet
 from bokeh.layouts import row
 from bokeh.io import output_notebook, export_png
 from bokeh.transform import linear_cmap
 from bokeh.palettes import Plasma256
+import numpy as np
 import mdtraj as md
 
 file_dir = '/xspace/hl4212/DURF_datasets/triad_molecule'
@@ -58,115 +59,205 @@ def RMSD_map(array, title='RMSD_map', ref_frame=0, save_dir=None):
     else:
         print('Sorry, only dimension reduced to 2D accepted.')
         
-def cluster_map(instance_array, label_array, center_array=None, title='Cluster_map',save_dir=None):
+def cluster_map(num_instances, dimred_method, clustering_method, index, save_dir=None):
     """
-    Displays differnet clusters in different colors, highlight the position of cluster centers (if provided)
+    Displays differnet clusters in different colors, highlight the position 
+    of cluster centers (if provided)
 
     Parameters
     ----------
-    instance_array : TYPE Numpy array, shape=(num_of_instances,2)
-        DESCRIPTION. The dataset (2D) used for clustering
-    label_array : TYPE Numpy array, shape=(num_of_instances,)
-        DESCRIPTION. Labels generated from clustering algorithms
-    center_array : TYPE Numpy array, shape=(num_of_clusters, 2) , optional
-        DESCRIPTION. Cluster centers generated from clustering algorithms. Some algorithms don't give cluster centers. The default is None.
-    title : TYPE String, optional
-        DESCRIPTION. Name for the plot. The default is 'Cluster_map'.
+    num_instances : TYPE Integer (10000, 40000, 70000 or 100000)
+        DESCRIPTION. Number of instances used for clustering
+    dimred_method : TYPE String
+        DESCRIPTION. Method used for dimensionality reduction
+    clustering_method : TYPE String
+        DESCRIPTION. Method used for clustering
+    index : TYPE Integer
+        DESCRIPTION. The hyperparameter index from the preclustering loop,
+        can be obtained by inspecting the benchmark plot
     save_dir : TYPE File path (string), optional
-        DESCRIPTION. If specified, the plot will be saved to the given directory. The default is None.
+        DESCRIPTION. If specified, the plot will be saved to the given 
+        directory. The default is None.
 
     Returns
     -------
     None. Prints (and saves) the plot
 
     """
+    
+    results_dir = '/xspace/hl4212/results'
+    instance_path = f'{results_dir}/dimensionality_reduction/dimreduct_{dimred_method}.npy'
+    instance_array = np.load(instance_path)[:num_instances, :]
+    label_path = f'{results_dir}/clustering/{dimred_method}_{clustering_method}_{num_instances}_labels.npy'
+    label_array = np.load(label_path)[index]
+    try:
+        center_path = f'{results_dir}/clustering/{dimred_method}_{clustering_method}_{num_instances}_ccenters.npy'
+        center_array = np.load(center_path, allow_pickle=True)[index]
+    except:
+        center_array=None
     x = instance_array[:, 0].reshape(len(instance_array), )
     y = instance_array[:, 1].reshape(len(instance_array), )
-    source = ColumnDataSource(dict(x=x,y=y, label_array=label_array))
-    mapper = linear_cmap(field_name='label_array', palette=Plasma256 ,\
+    total_cluster = len(np.unique(label_array))
+    source = ColumnDataSource(dict(x=x,y=y, label_array=label_array.astype(str)))
+    mapper = linear_cmap(field_name='label_array', palette=Plasma256,\
                          low=min(label_array) ,high=max(label_array))
-    p = figure(title=title, 
+    p = figure(title=f'{dimred_method}_{clustering_method}_{num_instances}', 
                x_axis_label='dim1', 
                y_axis_label='dim2', 
                tools=[BoxZoomTool(), HoverTool(), PanTool(), ResetTool(), \
                       SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')],
                )
-    p.circle(x='x', y='y', line_color=mapper, fill_color=mapper, 
+    p.circle(x='x', y='y', line_color=mapper, fill_color=mapper,
              source=source, alpha=0.5,size=3)
+    label = Label(x=150, y=10, x_units='screen', y_units='screen',
+                 text=f'Total number of clusters: {total_cluster}',
+                 border_line_color='black', border_line_alpha=1.0,text_line_height=1.5,
+                 background_fill_color='White', text_font_size='20px')
+    p.add_layout(label)
     try:
         x_center = center_array[:, 0].reshape(len(center_array), )
         y_center = center_array[:, 1].reshape(len(center_array), )
-        p.triangle(x=x_center, y=y_center, line_color='green', fill_color='green', size=10)
+        index = list(range(len(x_center)))
+        ccsource = ColumnDataSource(data=dict(x=x_center, y=y_center, index=index))
+        p.triangle('x', 'y', line_color='green', fill_color='green', size=10, source=ccsource, 
+                   legend_label = 'Cluster center (cluster index)')
+        labels = LabelSet(x='x', y='y', text='index', x_offset=5, y_offset=5, render_mode='canvas', source=ccsource,
+                         background_fill_color='white', background_fill_alpha = 0.5, text_color = 'black',
+                         text_font_size='20px', text_font_style='bold')
+        p.add_layout(labels)
+
     except:
         pass
-    color_bar = ColorBar(color_mapper=mapper['transform'], width=8)
-    p.add_layout(color_bar, 'right')
-    p.add_layout(Title(text="Cluster #", align="center"), "right")
     output_notebook()
     show(p)
     if save_dir != None:
-        export_png(p, filename=f'{save_dir}/{title}.png')
+        export_png(p, filename=f'{save_dir}/{dimred_method}_{clustering_method}_{num_instances}.png')
         
-def preclustering_benchmark(x_axis, dataset_arr, tags=None):
+def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, tags=None):
     """
     Plot the benchmark score (AIC, BIC, Inertia, Silhouette score) with respect 
-    to differnet variances (cluster_num, instances_num)
+    to differnet variables (cluster_num, instances_num). Results generated from
+    different sample sizes will be inspected and compared in one graph.
 
     Parameters
     ----------
     x_axis : TYPE 1D Numpy array
-        DESCRIPTION. The x-axis value (cluster_num, instances_num, sequence)
-    dataset_arr : TYPE Numpy array, shape = (num_of_samples, a), a=1 or 2 or 3
-        DESCRIPTION. The benchmark(s) generated by the Preclustering module
+        DESCRIPTION. The x-axis value (cluster_num or sequence)
+    dimreduct_method : TYPE String
+        DESCRIPTION. Method used for dimensionality reduction
+    clustering_method : TYPE String
+        DESCRIPTION. Method used for clustering
     tags : TYPE 1D Numpy array, optional
-        DESCRIPTION The parameter tags, specific to HDBSCAN algorithm where there are multiple parameters. 
-        The default is None.
+        DESCRIPTION The parameter tags, specific to HDBSCAN algorithm where 
+        there are multiple parameters. The default is None.
 
     Returns
     -------
-    None. 
+    None.
         Prints the following plots on screen: 
         For kmeans/kmedoids (a=2), two subplots, inertia-x & silhouette score-x.
         For gmm (a=3), two subplots, AIC/BIC-x & silhouette score-x.
         For hdbscan (a=1), one plot, silhouette score-x.
 
     """
-    if len(dataset_arr[0]) == 2:
-        p1 = figure(x_axis_label='Num of instances',
+    read_dir = '/xspace/hl4212/results/clustering'
+    dataset_10000 = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_10000_benchmarks.npy')   
+    dataset_40000 = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_40000_benchmarks.npy')
+    dataset_70000 = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_70000_benchmarks.npy')
+    dataset_100000 = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_100000_benchmarks.npy')
+
+    if len(dataset_10000[0]) == 2:
+        p1 = figure(x_axis_label='Num of clusters',
                     y_axis_label='Benchmark',
+                    title=f'Inertia_{dimreduct_method}_{clustering_method}',
+                    tools=[BoxZoomTool(), HoverTool(), PanTool(), ResetTool(), 
+                           SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')],
                     )
-        p2 = figure(x_axis_label='Num of instances',
+        p2 = figure(x_axis_label='Num of clusters',
                     y_axis_label='Benchmark',
+                    title=f'Silhouette score_{dimreduct_method}_{clustering_method}',
+                    tools=[BoxZoomTool(), HoverTool(), PanTool(), ResetTool(), 
+                           SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')],
                     )
-        p1.line(x=x_axis, y=dataset_arr[: , 0], legend_label = 'Inertia', line_width=2)
-        p2.line(x=x_axis, y=dataset_arr[: , 1], legend_label = 'Silhouette Score', line_width=2)
+        p1.line(x=x_axis, y=dataset_10000[: , 0], legend_label = 'num of instances: 10000', 
+                line_width=2, line_color='blue')
+        p1.line(x=x_axis, y=dataset_40000[: , 0], legend_label = 'num of instances: 40000', 
+                line_width=2, line_color='red')
+        p1.line(x=x_axis, y=dataset_70000[: , 0], legend_label = 'num of instances: 70000', 
+                line_width=2, line_color='green')
+        p1.line(x=x_axis, y=dataset_100000[: , 0], legend_label = 'num of instances: 100000', 
+                line_width=2, line_color='grey')
+        
+        p2.line(x=x_axis, y=dataset_10000[: , 1], legend_label = 'num of instances: 10000', 
+                line_width=2, line_color='blue')
+        p2.line(x=x_axis, y=dataset_40000[: , 1], legend_label = 'num of instances: 40000', 
+                line_width=2, line_color='red')
+        p2.line(x=x_axis, y=dataset_70000[: , 1], legend_label = 'num of instances: 70000', 
+                line_width=2, line_color='green')
+        p2.line(x=x_axis, y=dataset_100000[: , 1], legend_label = 'num of instances: 100000', 
+                line_width=2, line_color='grey')
+        
         output_notebook()
         show(row(p1,p2))
         
-    elif len(dataset_arr[0]) == 3:
-        p1 = figure(x_axis_label='Num of instances',
+    elif len(dataset_10000[0]) == 3:
+        p1 = figure(x_axis_label='Num of clusters',
                     y_axis_label='Benchmark',
+                    title=f'BIC_{dimreduct_method}_{clustering_method}',
+                    tools=[BoxZoomTool(), HoverTool(), PanTool(), ResetTool(), 
+                           SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')],
                     )
-        p2 = figure(x_axis_label='Num of instances',
+        p2 = figure(x_axis_label='Num of clusters',
                     y_axis_label='Benchmark',
+                    title=f'AIC_{dimreduct_method}_{clustering_method}',
+                    tools=[BoxZoomTool(), HoverTool(), PanTool(), ResetTool(), 
+                           SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')],
                     )
-        p1.line(x=x_axis, y=dataset_arr[: , 0], legend_label = 'AIC', 
-                line_color='blue', line_width=2)
-        p1.line(x=x_axis, y=dataset_arr[: , 1], legend_label = 'BIC', 
-                line_color='red', line_width=2)
-        p2.line(x=x_axis, y=dataset_arr[: , 2], legend_label = 'Silhouette Score', 
-                line_width=2)
-        output_notebook()
-        show(row(p1,p2))
+        p3 = figure(x_axis_label='Num of clusters',
+                    y_axis_label='Benchmark',
+                    title=f'Silhouette score_{dimreduct_method}_{clustering_method}',
+                    tools=[BoxZoomTool(), HoverTool(), PanTool(), ResetTool(), 
+                           SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')],
+                    )
+        p1.line(x=x_axis, y=dataset_10000[: , 0], legend_label = 'num of instances: 10000', 
+                line_width=2, line_color='blue')
+        p1.line(x=x_axis, y=dataset_40000[: , 0], legend_label = 'num of instances: 40000', 
+                line_width=2, line_color='red')
+        p1.line(x=x_axis, y=dataset_70000[: , 0], legend_label = 'num of instances: 70000', 
+                line_width=2, line_color='green')
+        p1.line(x=x_axis, y=dataset_100000[: , 0], legend_label = 'num of instances: 100000', 
+                line_width=2, line_color='grey')
         
-    elif len(dataset_arr[0]) == 1:
-        source=ColumnDataSource(dict(tags=tags, x_axis=x_axis, dataset_arr=dataset_arr[: , 0]))
+        p2.line(x=x_axis, y=dataset_10000[: , 1], legend_label = 'num of instances: 10000', 
+                line_width=2, line_color='blue')
+        p2.line(x=x_axis, y=dataset_40000[: , 1], legend_label = 'num of instances: 40000', 
+                line_width=2, line_color='red')
+        p2.line(x=x_axis, y=dataset_70000[: , 1], legend_label = 'num of instances: 70000', 
+                line_width=2, line_color='green')
+        p2.line(x=x_axis, y=dataset_100000[: , 1], legend_label = 'num of instances: 100000', 
+                line_width=2, line_color='grey')
+        
+        p3.line(x=x_axis, y=dataset_10000[: , 2], legend_label = 'num of instances: 10000', 
+                line_width=2, line_color='blue')
+        p3.line(x=x_axis, y=dataset_40000[: , 2], legend_label = 'num of instances: 40000', 
+                line_width=2, line_color='red')
+        p3.line(x=x_axis, y=dataset_70000[: , 2], legend_label = 'num of instances: 70000', 
+                line_width=2, line_color='green')
+        p3.line(x=x_axis, y=dataset_100000[: , 2], legend_label = 'num of instances: 100000', 
+                line_width=2, line_color='grey')
+        
+        output_notebook()
+        show(row(p1,p2,p3))
+        
+    elif len(dataset_100000[0]) == 1:
+        tags = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_100000_tags.npy')
+        source=ColumnDataSource(dict(tags=tags, x_axis=x_axis, dataset_arr=dataset_100000[: , 0]))
         p = figure(x_axis_label='Sequence of data points',
                    y_axis_label='Benchmark',
                    tools=[BoxZoomTool(), PanTool(), ResetTool(), 
                           SaveTool(), WheelZoomTool(), 
-                          HoverTool(tooltips=[('data y', '$y'),
-                                              ('eps+min_clus_size+min_sample', '@tags')
+                          HoverTool(tooltips=[('index', '$index'),
+                                              ('eps,min clus size,min sample', '@tags')
                                               ]
                                     )
                           ]
