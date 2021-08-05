@@ -1,5 +1,5 @@
 import numpy as np
-from tools.clustering import Preclustering
+from tools.clustering import Clustering
 from sklearn.preprocessing import MinMaxScaler
 import argparse
 
@@ -17,14 +17,14 @@ instances_num = args.instances_num
 read_dir = '/xspace/hl4212/results/dimensionality_reduction'
 
 # File path to write files
-write_dir = '/xspace/hl4212/results/clustering/preclustering'
+write_dir = '/xspace/hl4212/results/clustering'
 
 # Load array for clustering
 file_path = f'{read_dir}/dimreduct_{target_name}.npy'
 arr = np.load(file_path)
 
 # Load modules
-evaluator = Preclustering(arr, instances_num)
+evaluator = Clustering(arr, instances_num)
 dispatcher = {'kmeans':evaluator.kmeans,
               'kmedoids':evaluator.kmedoids,
               'gmm':evaluator.gmm,
@@ -37,7 +37,7 @@ labels = []
 
 if method_name != 'hdbscan':
     ccenters_list = []
-    for cluster_num in range(2,21,2):
+    for cluster_num in range(6,11):
         result, ccenters, label = dispatcher[method_name](cluster_num)
         results.append(result)
         ccenters_list.append(ccenters)
