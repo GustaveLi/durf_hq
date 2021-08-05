@@ -5,6 +5,7 @@ from bokeh.layouts import row
 from bokeh.io import output_notebook, export_png
 from bokeh.transform import linear_cmap
 from bokeh.palettes import Plasma256
+import matplotlib.pyplot as plt
 import numpy as np
 import mdtraj as md
 
@@ -133,7 +134,7 @@ def cluster_map(num_instances, dimred_method, clustering_method, index, save_dir
     if save_dir != None:
         export_png(p, filename=f'{save_dir}/{dimred_method}_{clustering_method}_{num_instances}.png')
         
-def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, tags=None):
+def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, all_runs = True, tags=None):
     """
     Plot the benchmark score (AIC, BIC, Inertia, Silhouette score) with respect 
     to differnet variables (cluster_num, instances_num). Results generated from
@@ -147,6 +148,11 @@ def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, tags=No
         DESCRIPTION. Method used for dimensionality reduction
     clustering_method : TYPE String
         DESCRIPTION. Method used for clustering
+    all_runs: TYPE Bool, optional
+        DESCRIPTION If set to True, Results generated from
+        different sample sizes will be inspected and compared in one graph.
+        If set to False, only results with file size 100,000 will be displayed.
+        The default is True.
     tags : TYPE 1D Numpy array, optional
         DESCRIPTION The parameter tags, specific to HDBSCAN algorithm where 
         there are multiple parameters. The default is None.
@@ -156,17 +162,18 @@ def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, tags=No
     None.
         Prints the following plots on screen: 
         For kmeans/kmedoids (a=2), two subplots, inertia-x & silhouette score-x.
-        For gmm (a=3), two subplots, AIC/BIC-x & silhouette score-x.
+        For gmm (a=3), three subplots, AIC-x, BIC-x & silhouette score-x.
         For hdbscan (a=1), one plot, silhouette score-x.
 
     """
     read_dir = '/xspace/hl4212/results/clustering'
-    dataset_10000 = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_10000_benchmarks.npy')   
-    dataset_40000 = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_40000_benchmarks.npy')
-    dataset_70000 = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_70000_benchmarks.npy')
+    if all_runs == True:
+        dataset_10000 = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_10000_benchmarks.npy')   
+        dataset_40000 = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_40000_benchmarks.npy')
+        dataset_70000 = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_70000_benchmarks.npy')
     dataset_100000 = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_100000_benchmarks.npy')
 
-    if len(dataset_10000[0]) == 2:
+    if len(dataset_100000[0]) == 2:
         p1 = figure(x_axis_label='Num of clusters',
                     y_axis_label='Benchmark',
                     title=f'Inertia_{dimreduct_method}_{clustering_method}',
@@ -179,28 +186,31 @@ def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, tags=No
                     tools=[BoxZoomTool(), HoverTool(), PanTool(), ResetTool(), 
                            SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')],
                     )
-        p1.line(x=x_axis, y=dataset_10000[: , 0], legend_label = 'num of instances: 10000', 
-                line_width=2, line_color='blue')
-        p1.line(x=x_axis, y=dataset_40000[: , 0], legend_label = 'num of instances: 40000', 
-                line_width=2, line_color='red')
-        p1.line(x=x_axis, y=dataset_70000[: , 0], legend_label = 'num of instances: 70000', 
-                line_width=2, line_color='green')
+        
+        if all_runs == True:
+            p1.line(x=x_axis, y=dataset_10000[: , 0], legend_label = 'num of instances: 10000', 
+                    line_width=2, line_color='blue')
+            p1.line(x=x_axis, y=dataset_40000[: , 0], legend_label = 'num of instances: 40000', 
+                    line_width=2, line_color='red')
+            p1.line(x=x_axis, y=dataset_70000[: , 0], legend_label = 'num of instances: 70000', 
+                    line_width=2, line_color='green')
         p1.line(x=x_axis, y=dataset_100000[: , 0], legend_label = 'num of instances: 100000', 
                 line_width=2, line_color='grey')
         
-        p2.line(x=x_axis, y=dataset_10000[: , 1], legend_label = 'num of instances: 10000', 
-                line_width=2, line_color='blue')
-        p2.line(x=x_axis, y=dataset_40000[: , 1], legend_label = 'num of instances: 40000', 
-                line_width=2, line_color='red')
-        p2.line(x=x_axis, y=dataset_70000[: , 1], legend_label = 'num of instances: 70000', 
-                line_width=2, line_color='green')
+        if all_runs == True:
+            p2.line(x=x_axis, y=dataset_10000[: , 1], legend_label = 'num of instances: 10000', 
+                    line_width=2, line_color='blue')
+            p2.line(x=x_axis, y=dataset_40000[: , 1], legend_label = 'num of instances: 40000', 
+                    line_width=2, line_color='red')
+            p2.line(x=x_axis, y=dataset_70000[: , 1], legend_label = 'num of instances: 70000', 
+                    line_width=2, line_color='green')
         p2.line(x=x_axis, y=dataset_100000[: , 1], legend_label = 'num of instances: 100000', 
                 line_width=2, line_color='grey')
         
         output_notebook()
         show(row(p1,p2))
         
-    elif len(dataset_10000[0]) == 3:
+    elif len(dataset_100000[0]) == 3:
         p1 = figure(x_axis_label='Num of clusters',
                     y_axis_label='Benchmark',
                     title=f'BIC_{dimreduct_method}_{clustering_method}',
@@ -219,30 +229,34 @@ def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, tags=No
                     tools=[BoxZoomTool(), HoverTool(), PanTool(), ResetTool(), 
                            SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')],
                     )
-        p1.line(x=x_axis, y=dataset_10000[: , 0], legend_label = 'num of instances: 10000', 
-                line_width=2, line_color='blue')
-        p1.line(x=x_axis, y=dataset_40000[: , 0], legend_label = 'num of instances: 40000', 
-                line_width=2, line_color='red')
-        p1.line(x=x_axis, y=dataset_70000[: , 0], legend_label = 'num of instances: 70000', 
-                line_width=2, line_color='green')
+        
+        if all_runs == True:
+            p1.line(x=x_axis, y=dataset_10000[: , 0], legend_label = 'num of instances: 10000', 
+                    line_width=2, line_color='blue')
+            p1.line(x=x_axis, y=dataset_40000[: , 0], legend_label = 'num of instances: 40000', 
+                    line_width=2, line_color='red')
+            p1.line(x=x_axis, y=dataset_70000[: , 0], legend_label = 'num of instances: 70000', 
+                    line_width=2, line_color='green')
         p1.line(x=x_axis, y=dataset_100000[: , 0], legend_label = 'num of instances: 100000', 
                 line_width=2, line_color='grey')
         
-        p2.line(x=x_axis, y=dataset_10000[: , 1], legend_label = 'num of instances: 10000', 
-                line_width=2, line_color='blue')
-        p2.line(x=x_axis, y=dataset_40000[: , 1], legend_label = 'num of instances: 40000', 
-                line_width=2, line_color='red')
-        p2.line(x=x_axis, y=dataset_70000[: , 1], legend_label = 'num of instances: 70000', 
-                line_width=2, line_color='green')
+        if all_runs == True:
+            p2.line(x=x_axis, y=dataset_10000[: , 1], legend_label = 'num of instances: 10000', 
+                    line_width=2, line_color='blue')
+            p2.line(x=x_axis, y=dataset_40000[: , 1], legend_label = 'num of instances: 40000', 
+                    line_width=2, line_color='red')
+            p2.line(x=x_axis, y=dataset_70000[: , 1], legend_label = 'num of instances: 70000', 
+                    line_width=2, line_color='green')
         p2.line(x=x_axis, y=dataset_100000[: , 1], legend_label = 'num of instances: 100000', 
                 line_width=2, line_color='grey')
         
-        p3.line(x=x_axis, y=dataset_10000[: , 2], legend_label = 'num of instances: 10000', 
-                line_width=2, line_color='blue')
-        p3.line(x=x_axis, y=dataset_40000[: , 2], legend_label = 'num of instances: 40000', 
-                line_width=2, line_color='red')
-        p3.line(x=x_axis, y=dataset_70000[: , 2], legend_label = 'num of instances: 70000', 
-                line_width=2, line_color='green')
+        if all_runs == True:
+            p3.line(x=x_axis, y=dataset_10000[: , 2], legend_label = 'num of instances: 10000', 
+                    line_width=2, line_color='blue')
+            p3.line(x=x_axis, y=dataset_40000[: , 2], legend_label = 'num of instances: 40000', 
+                    line_width=2, line_color='red')
+            p3.line(x=x_axis, y=dataset_70000[: , 2], legend_label = 'num of instances: 70000', 
+                    line_width=2, line_color='green')
         p3.line(x=x_axis, y=dataset_100000[: , 2], legend_label = 'num of instances: 100000', 
                 line_width=2, line_color='grey')
         
@@ -265,3 +279,28 @@ def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, tags=No
         p.line('x_axis', 'dataset_arr', legend_label = 'Silhouette Score', source = source, line_width = 2)
         output_notebook()
         show(p)
+        
+def rmsd_heatmap(rmsd_array, n):
+    """
+    Plot heatmap for a given RMSD array.
+
+    Parameters
+    ----------
+    rmsd_array : TYPE Numpy Array, shape=(num_of_clusters*n, num_of_clusters*n)
+        DESCRIPTION. The pairwise-rmsd array
+    n : TYPE Integer
+        DESCRIPTION. Number of core instances in each cluster
+
+    Returns
+    -------
+    None.
+    Prints the heat map on screen
+
+    """
+    num_clusters=len(rmsd_array)//n
+    plt.figure(figsize=(9,9))
+    plt.imshow(rmsd_array, cmap='viridis')
+    plt.xlabel(f'Frame # (total number of clusters: {num_clusters})')
+    plt.ylabel(f'Frame # (total number of clusters: {num_clusters})')
+    plt.colorbar(label=r'RMSD ($\AA$)')
+    plt.show()
