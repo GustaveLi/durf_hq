@@ -118,13 +118,13 @@ def cluster_map(num_instances, dimred_method, clustering_method, index, save_dir
     try:
         x_center = center_array[:, 0].reshape(len(center_array), )
         y_center = center_array[:, 1].reshape(len(center_array), )
-        index = list(range(len(x_center)))
-        ccsource = ColumnDataSource(data=dict(x=x_center, y=y_center, index=index))
+        index_ = list(range(len(x_center)))
+        ccsource = ColumnDataSource(data=dict(x=x_center, y=y_center, index_=index_))
         p.triangle('x', 'y', line_color='green', fill_color='green', size=10, source=ccsource, 
                    legend_label = 'Cluster center (cluster index)')
-        labels = LabelSet(x='x', y='y', text='index', x_offset=5, y_offset=5, render_mode='canvas', source=ccsource,
-                         background_fill_color='white', background_fill_alpha = 0.5, text_color = 'black',
-                         text_font_size='20px', text_font_style='bold')
+        labels = LabelSet(x='x', y='y', text='index_', x_offset=5, y_offset=5, render_mode='canvas', source=ccsource,
+                         background_fill_color='white', background_fill_alpha = 1, text_color = 'black',
+                         text_font_size='30px', text_font_style='bold')
         p.add_layout(labels)
 
     except:
@@ -132,9 +132,9 @@ def cluster_map(num_instances, dimred_method, clustering_method, index, save_dir
     output_notebook()
     show(p)
     if save_dir != None:
-        export_png(p, filename=f'{save_dir}/{dimred_method}_{clustering_method}_{num_instances}.png')
+        export_png(p, filename=f'{save_dir}/{dimred_method}_{clustering_method}_{index}.png')
         
-def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, all_runs = True, tags=None):
+def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, all_runs = True, tags=None, save_dir = None):
     """
     Plot the benchmark score (AIC, BIC, Inertia, Silhouette score) with respect 
     to differnet variables (cluster_num, instances_num). Results generated from
@@ -166,7 +166,7 @@ def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, all_run
         For hdbscan (a=1), one plot, silhouette score-x.
 
     """
-    read_dir = '/xspace/hl4212/results/clustering'
+    read_dir = '/xspace/hl4212/results/clustering_rough'
     if all_runs == True:
         dataset_10000 = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_10000_benchmarks.npy')   
         dataset_40000 = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_40000_benchmarks.npy')
@@ -209,6 +209,9 @@ def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, all_run
         
         output_notebook()
         show(row(p1,p2))
+        if save_dir != None:
+            export_png(p1, filename=f'{save_dir}/Inertia_{dimreduct_method}_{clustering_method}.png')
+            export_png(p2, filename=f'{save_dir}/Silhouette_score_{dimreduct_method}_{clustering_method}.png')
         
     elif len(dataset_100000[0]) == 3:
         p1 = figure(x_axis_label='Num of clusters',
@@ -262,6 +265,11 @@ def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, all_run
         
         output_notebook()
         show(row(p1,p2,p3))
+                            
+        if save_dir != None:
+            export_png(p1, filename=f'{save_dir}/BIC_{dimreduct_method}_{clustering_method}.png')
+            export_png(p2, filename=f'{save_dir}/AIC_{dimreduct_method}_{clustering_method}.png')
+            export_png(p3, filename=f'{save_dir}/Silhouette_score_{dimreduct_method}_{clustering_method}.png')
         
     elif len(dataset_100000[0]) == 1:
         tags = np.load(f'{read_dir}/{dimreduct_method}_{clustering_method}_100000_tags.npy')
@@ -280,7 +288,7 @@ def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, all_run
         output_notebook()
         show(p)
         
-def rmsd_heatmap(rmsd_array, n):
+def rmsd_heatmap(rmsd_array, title, n, save=False):
     """
     Plot heatmap for a given RMSD array.
 
@@ -288,19 +296,29 @@ def rmsd_heatmap(rmsd_array, n):
     ----------
     rmsd_array : TYPE Numpy Array, shape=(num_of_clusters*n, num_of_clusters*n)
         DESCRIPTION. The pairwise-rmsd array
+    title : TYPE String
+        DESCRIPTION. The title for the plot
     n : TYPE Integer
         DESCRIPTION. Number of core instances in each cluster
+    save : TYPE Bool, optional
+        DESCRIPTION Specify whether to save the fig to disk. The default is None.
 
     Returns
     -------
     None.
-    Prints the heat map on screen
+    Prints (OR saves) the heat map on screen
 
     """
     num_clusters=len(rmsd_array)//n
     plt.figure(figsize=(9,9))
-    plt.imshow(rmsd_array, cmap='viridis')
+    plt.imshow(rmsd_array, cmap='viridis', vmin=0, vmax=1)
     plt.xlabel(f'Frame # (total number of clusters: {num_clusters})')
     plt.ylabel(f'Frame # (total number of clusters: {num_clusters})')
     plt.colorbar(label=r'RMSD ($\AA$)')
-    plt.show()
+    plt.title(title)
+    
+    if save==False:
+        plt.show()
+    elif save==True:
+        save_dir = '/xspace/hl4212/results/clustering/plots/RMSD_map'
+        plt.savefig(f'{save_dir}/{title}.png')
