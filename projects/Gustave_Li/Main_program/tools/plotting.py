@@ -322,3 +322,49 @@ def rmsd_heatmap(rmsd_array, title, n, save=False):
     elif save==True:
         save_dir = '/xspace/hl4212/results/clustering/plots/RMSD_map'
         plt.savefig(f'{save_dir}/{title}.png')
+        
+def PearsonR_heatmap(dim1_array, dim2_array):
+    """
+    Given the two Pearson Correlation Coefficient array along different dimensions (PC1 & PC2),
+    plot the Pearson R heatmap with Pearson R value shown in plot.
+
+    Parameters
+    ----------
+    dim1_array : TYPE Numpy array, shape=(num_clusters, num_clusters)
+        DESCRIPTION. Pearson R array along 1st dimension
+    dim2_array : TYPE Numpy array, shape=(num_clusters, num_clusters)
+        DESCRIPTION. Pearson R array along 2nd dimension
+
+    Returns
+    -------
+    None. Plot the two subplots on screen
+
+    """
+    cluster_num = len(dim1_array)
+    
+    plt.rcParams.update({'font.size': 15, 'font.weight':'bold'})
+    fig, ax = plt.subplots(1, 2, figsize=(19,19))
+    im_0 = ax[0].imshow(dim1_array, vmin=-1, vmax=1)
+    ax[0].grid(False)
+    ax[0].xaxis.set(ticks=range(cluster_num))
+    ax[0].yaxis.set(ticks=range(cluster_num))
+    ax[0].set_title('dim_1')
+    ax[0].set_xlabel('Cluster #')
+    ax[0].set_ylabel('Cluster #')
+    
+    im_1 = ax[1].imshow(dim2_array, vmin=-1, vmax=1)
+    ax[1].grid(False)
+    ax[1].xaxis.set(ticks=range(cluster_num))
+    ax[1].yaxis.set(ticks=range(cluster_num))
+    ax[1].set_title('dim_2')
+    ax[1].set_xlabel('Cluster #')
+    ax[1].set_ylabel('Cluster #')
+    for i in range(cluster_num):
+        for j in range(cluster_num):
+            ax[0].text(j, i, format(float(dim1_array[i, j]), '.2f'), ha='center', va='center',
+                    color='r')
+            ax[1].text(j, i, format(float(dim2_array[i, j]), '.2f'), ha='center', va='center',
+                    color='r')
+    cbar_0 = ax[0].figure.colorbar(im_0, ax=ax[0], format='% .2f', shrink=0.5)
+    cbar_1 = ax[1].figure.colorbar(im_1, ax=ax[1], format='% .2f', shrink=0.5)
+    plt.show()
