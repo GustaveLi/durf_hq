@@ -1,1 +1,3 @@
 The labels, cluster centers and the benchmarks files for clustering has now been moved to /xspace/hl4212/results/clustering/preclustering.
+
+The plots of scoring, cluster map and RMSD map are stored under /xspace/hl4212/results/clustering/plots
