@@ -1,6 +1,6 @@
 from bokeh.plotting import figure, show
 from bokeh.models.tools import *
-from bokeh.models import ColumnDataSource, ColorBar, Title, Label, LabelSet
+from bokeh.models import ColumnDataSource, ColorBar, Title, Label, LabelSet, BoxAnnotation
 from bokeh.layouts import row
 from bokeh.io import output_notebook, export_png
 from bokeh.transform import linear_cmap
@@ -109,7 +109,7 @@ def cluster_map(num_instances, dimred_method, clustering_method, index, save_dir
                       SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')],
                )
     p.circle(x='x', y='y', line_color=mapper, fill_color=mapper,
-             source=source, alpha=0.5,size=3)
+             source=source, alpha=0.1,size=3)
     label = Label(x=150, y=10, x_units='screen', y_units='screen',
                  text=f'Total number of clusters: {total_cluster}',
                  border_line_color='black', border_line_alpha=1.0,text_line_height=1.5,
@@ -134,7 +134,7 @@ def cluster_map(num_instances, dimred_method, clustering_method, index, save_dir
     if save_dir != None:
         export_png(p, filename=f'{save_dir}/{dimred_method}_{clustering_method}_{index}.png')
         
-def preclustering_benchmark(x_axis, dimreduct_method, clustering_method, all_runs = True, tags=None, save_dir = None):
+def preclustering_scoring(x_axis, dimreduct_method, clustering_method, all_runs = True, tags=None, save_dir = None):
     """
     Plot the benchmark score (AIC, BIC, Inertia, Silhouette score) with respect 
     to differnet variables (cluster_num, instances_num). Results generated from
@@ -342,7 +342,7 @@ def PearsonR_heatmap(dim1_array, dim2_array):
     """
     cluster_num = len(dim1_array)
     
-    plt.rcParams.update({'font.size': 15, 'font.weight':'bold'})
+    plt.rcParams.update({'font.size': 13, 'font.weight':'bold'})
     fig, ax = plt.subplots(1, 2, figsize=(19,19))
     im_0 = ax[0].imshow(dim1_array, vmin=-1, vmax=1)
     ax[0].grid(False)
@@ -368,3 +368,21 @@ def PearsonR_heatmap(dim1_array, dim2_array):
     cbar_0 = ax[0].figure.colorbar(im_0, ax=ax[0], format='% .2f', shrink=0.5)
     cbar_1 = ax[1].figure.colorbar(im_1, ax=ax[1], format='% .2f', shrink=0.5)
     plt.show()
+
+def cluster_population(population_df):
+    source = ColumnDataSource(dict(idx=population_df['cluster_idx'],
+                                   pop=population_df['population']))
+    
+    p = figure(title="Cluster population", x_axis_label='Cluster index',
+               y_range=(0, population_df['population'].max()+1000))
+    p.vbar(x='idx', width=0.7, top='pop', source=source, bottom=0, color='firebrick')
+    
+    # Add box annotation of 5% population
+    five_percent_box = BoxAnnotation(top=(population_df['population'].sum()*0.05), bottom=0, fill_alpha=0.1, fill_color='blue')
+    p.add_layout(five_percent_box)
+    
+    # Add labels on top of each bar
+    labels = LabelSet(x='idx', y='pop', text='pop', x_offset=-22, y_offset=0, 
+                      source=source, render_mode='canvas')
+    p.add_layout(labels)
+    show(p)
