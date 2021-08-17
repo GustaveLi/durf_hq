@@ -257,3 +257,30 @@ class Cluster_inspection():
         elif dim=='dim2':
             pearson = pearson_y
         return pearson
+    
+    def label_by_quality(self):
+        """
+        Define cluster quality as the sum of absolute value of Pearson R between 
+        the given cluster and other clusters (both on dim1 and dim2). Smaller the
+        number greater the quality.
+
+        Returns
+        -------
+        idx_list : TYPE List, len=number_of_clusters
+            DESCRIPTION. The list of cluster labels sequenced by cluster quality.
+            Cluster with better quality comes first.
+
+        """
+        PearsonR_dim1 = Cluster_inspection.PearsonR(self, dim='dim1')
+        PearsonR_dim2 = Cluster_inspection.PearsonR(self, dim='dim2')
+        
+        scoring_dim1 = np.sum(np.abs(PearsonR_dim1), axis=1)
+        scoring_dim2 = np.sum(np.abs(PearsonR_dim2), axis=1)
+        scoring = scoring_dim1+scoring_dim2
+        
+        idx_list = []
+        for i in np.sort(scoring):
+            idx = int(np.where(scoring==i)[0])
+            idx_list.append(idx)
+            
+        return idx_list
