@@ -160,8 +160,8 @@ class Cluster_inspection():
             is Angstrom
 
         """
-        top_dir = '/xspace/hl4212/DURF_datasets/triad_molecule'
-        top_path = f'{top_dir}/triad_forcefield_ground.prmtop'
+        #top_dir = '/xspace/hl4212/DURF_datasets/triad_molecule'
+        #top_path = f'{top_dir}/triad_forcefield_ground.prmtop'
         
         core_dir = '/xspace1/projects/CT_Landscape/data/triad_durf_dataset'
         nearest_n = Cluster_inspection.find_nearest_n(self, n).reshape(-1,)
@@ -243,7 +243,6 @@ class Cluster_inspection():
         truncated_x = np.empty([cluster_num, n], dtype = 'int')
         truncated_y = np.empty([cluster_num, n], dtype = 'int')
         
-        # Take 5000 instances from the original array of equal distaces
         # Pearson r calculation needs equal size of data
         for i in range(cluster_num):
             idx = np.linspace(0, len(sorted_x[i]), n, endpoint=False, dtype='int')
@@ -258,7 +257,7 @@ class Cluster_inspection():
             pearson = pearson_y
         return pearson
     
-    def label_by_quality(self):
+    def cluster_quality_sequence(self):
         """
         Define cluster quality as the sum of absolute value of Pearson R between 
         the given cluster and other clusters (both on dim1 and dim2). Smaller the
@@ -284,3 +283,77 @@ class Cluster_inspection():
             idx_list.append(idx)
             
         return idx_list
+    
+class High_dim_clustering(Cluster_inspection):
+    
+    def __init__(self, num_instances, dimred_method, clustering_method, index):
+        super().__init__(num_instances, dimred_method, clustering_method, index)
+        
+    def rmsd(self, ref_frame):
+        """
+        Calculate the RMSD of the triad trajectory with respect to a reference
+        frame
+
+        Parameters
+        ----------
+        ref_frame : TYPE Integer
+            DESCRIPTION. The reference frame number
+
+        Returns
+        -------
+        rmsd : TYPE Numpy array, shape=(num_of_instances, )
+            DESCRIPTION. The RMSD array
+
+        """
+        # Load triad data
+        triad_dir = '/xspace/hl4212/DURF_datasets/triad_molecule'
+        triad_path = f'{triad_dir}/triad_dataset.nc'
+        top_path = f'{triad_dir}/triad_forcefield_ground.prmtop'
+        traj = md.load(triad_path, top=top_path)
+        
+        # Calculate rmsd with respect to the given reference frame
+        rmsd = md.rmsd(traj, traj, frame=ref_frame)
+        return rmsd
+    
+    def high_dim_labels(self, threshold):
+        """
+        Try to assign instances to different clusters in high dimensional space
+        (the original xyz space). We say the two instances are in the same 
+        cluster when their RMSD is less than a given threshold. Clusters with better 
+        quality (see Cluster_inspection.cluster_quality_sequence( ) for more information)
+        will be assigned members first.
+
+        Parameters
+        ----------
+        threshold : TYPE Float
+            DESCRIPTION. The threshold RMSD value to consider two instances be in
+            one cluster
+
+        Returns
+        -------
+        center_index : TYPE Numpy array, shape=(num_of_clusters, )
+            DESCRIPTION. The triad index of each cluster center (which is the 
+            instance closest to the cluster center in 2D feature space)
+        high_dim_labels : TYPE Numpy array, shape=(num_of_instances, )
+            DESCRIPTION. Cluster label of each instance in higher dimensional space.
+            -1 means the instance belongs to no cluster under the current threshold
+
+        """
+        # Initialize the labels and set to -1. If it belongs to no cluster after
+        # calculation, the label will remain -1
+        high_dim_labels = np.ones((self.num_instances, ), dtype=int)*(-1)
+        
+        # Obtain index of the instance closest to each cluster center
+        # Cluster of better quality (in 2D space) will be assigned members first
+        center_index = High_dim_clustering.find_nearest_n(self, 1).reshape(-1,)
+        cluster_sequence = High_dim_clustering.cluster_quality_sequence(self)
+        
+        for i in cluster_sequence:
+            ref_frame = center_index[i]
+            rmsd = High_dim_clustering.rmsd(self, ref_frame)
+            high_dim_labels[np.where((rmsd < threshold) & (high_dim_labels == -1))] = i
+            del rmsd
+            
+        return center_index, high_dim_labels
+          
+        
