@@ -14,8 +14,8 @@ dimred_method = args.dimred_method
 index = args.index
 threshold = args.threshold
 
-high_dim = High_dim_clustering(100000, dimred_method, clustering_method, index)
-center_idx, labels = high_dim.high_dim_labels(threshold)
+high_dim = High_dim_clustering(100000, dimred_method, clustering_method, index,threshold)
+center_idx, labels = high_dim.high_dim_labels()
 
 results_dir = '/xspace/hl4212/results/high_dim_clustering'
 center_idx_path = f'{results_dir}/{dimred_method}_{clustering_method}_{index}_{threshold}_CenterIdx'

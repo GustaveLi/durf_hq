@@ -60,7 +60,8 @@ def RMSD_map(array, title='RMSD_map', ref_frame=0, save_dir=None):
     else:
         print('Sorry, only dimension reduced to 2D accepted.')
         
-def cluster_map(num_instances, dimred_method, clustering_method, index, save_dir=None):
+def cluster_map(num_instances, dimred_method, clustering_method, index, 
+                threshold=None, save_dir=None):
     """
     Displays differnet clusters in different colors, highlight the position 
     of cluster centers (if provided)
@@ -76,6 +77,10 @@ def cluster_map(num_instances, dimred_method, clustering_method, index, save_dir
     index : TYPE Integer
         DESCRIPTION. The hyperparameter index from the preclustering loop,
         can be obtained by inspecting the benchmark plot
+    threshold : TYPE Float, optional
+        DESCRIPTION. The RMSD threshold for high dimensional clustering.
+        Only use this parameter when the clusters are generated from high dimensioanl clustering.
+        The default is None.
     save_dir : TYPE File path (string), optional
         DESCRIPTION. If specified, the plot will be saved to the given 
         directory. The default is None.
@@ -89,16 +94,35 @@ def cluster_map(num_instances, dimred_method, clustering_method, index, save_dir
     results_dir = '/xspace/hl4212/results'
     instance_path = f'{results_dir}/dimensionality_reduction/dimreduct_{dimred_method}.npy'
     instance_array = np.load(instance_path)[:num_instances, :]
-    label_path = f'{results_dir}/clustering/{dimred_method}_{clustering_method}_{num_instances}_labels.npy'
-    label_array = np.load(label_path)[index]
+    if threshold != None:
+        label_path = f'{results_dir}/high_dim_clustering/{dimred_method}_{clustering_method}_{index}_{threshold}_Labels.npy'
+        label_array = np.load(label_path)
+    
+    else:
+        label_path = f'{results_dir}/clustering/{dimred_method}_{clustering_method}_{num_instances}_labels.npy'
+        label_array = np.load(label_path)[index]
+        
     try:
-        center_path = f'{results_dir}/clustering/{dimred_method}_{clustering_method}_{num_instances}_ccenters.npy'
-        center_array = np.load(center_path, allow_pickle=True)[index]
+        if threshold != None:
+            center_idx_path = f'{results_dir}/high_dim_clustering/{dimred_method}_{clustering_method}_{index}_{threshold}_CenterIdx.npy'
+            center_idx_array = np.load(center_idx_path)
+            center_array = instance_array[center_idx_array]
+            
+        else:
+            center_path = f'{results_dir}/clustering/{dimred_method}_{clustering_method}_{num_instances}_ccenters.npy'
+            center_array = np.load(center_path, allow_pickle=True)[index]
+        
     except:
-        center_array=None
+        pass
+        
     x = instance_array[:, 0].reshape(len(instance_array), )
     y = instance_array[:, 1].reshape(len(instance_array), )
-    total_cluster = len(np.unique(label_array))
+    
+    if -1 in label_array:
+        total_cluster = len(np.unique(label_array))-1
+    else:
+        total_cluster = len(np.unique(label_array))
+        
     source = ColumnDataSource(dict(x=x,y=y, label_array=label_array.astype(str)))
     mapper = linear_cmap(field_name='label_array', palette=Plasma256,\
                          low=min(label_array) ,high=max(label_array))
@@ -109,12 +133,13 @@ def cluster_map(num_instances, dimred_method, clustering_method, index, save_dir
                       SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')],
                )
     p.circle(x='x', y='y', line_color=mapper, fill_color=mapper,
-             source=source, alpha=0.1,size=3)
+             source=source, alpha=0.5,size=3)
     label = Label(x=150, y=10, x_units='screen', y_units='screen',
                  text=f'Total number of clusters: {total_cluster}',
                  border_line_color='black', border_line_alpha=1.0,text_line_height=1.5,
                  background_fill_color='White', text_font_size='20px')
     p.add_layout(label)
+    
     try:
         x_center = center_array[:, 0].reshape(len(center_array), )
         y_center = center_array[:, 1].reshape(len(center_array), )
@@ -126,9 +151,10 @@ def cluster_map(num_instances, dimred_method, clustering_method, index, save_dir
                          background_fill_color='white', background_fill_alpha = 1, text_color = 'black',
                          text_font_size='30px', text_font_style='bold')
         p.add_layout(labels)
-
+        
     except:
         pass
+
     output_notebook()
     show(p)
     if save_dir != None:
@@ -370,12 +396,37 @@ def PearsonR_heatmap(dim1_array, dim2_array):
     plt.show()
 
 def cluster_population(population_df):
+    """
+    Plot a vertical bar chart to display cluster populations. X-axis is the 
+    cluster index while the height of the bar is the population. Since instances 
+    with index -1 does not belong to any clusters, the bar will be colored differently.
+
+    Parameters
+    ----------
+    population_df : TYPE Pandas DataFrame (containing cluster index & cluster population)
+        DESCRIPTION. The dataframe generated by functions calculating cluster 
+        population (find out more in Cluster_inspection and High_dim_clustering
+        class)
+
+    Returns
+    -------
+    None. Plot the figure on screen
+
+    """
+    # Since instances that has -1 label means they are not in any clusters, color
+    # them separately
+    color_list = ['firebrick' for _ in range(len(population_df['cluster_idx']))]
+    if -1 in list(population_df['cluster_idx']):
+        color_list[0] = 'gray'
+        
     source = ColumnDataSource(dict(idx=population_df['cluster_idx'],
-                                   pop=population_df['population']))
+                                   pop=population_df['population'],
+                                   color_list=color_list))
     
-    p = figure(title="Cluster population", x_axis_label='Cluster index',
+    p = figure(title="Cluster population (high dimensional clustering)", x_axis_label='Cluster index',
                y_range=(0, population_df['population'].max()+1000))
-    p.vbar(x='idx', width=0.7, top='pop', source=source, bottom=0, color='firebrick')
+    
+    p.vbar(x='idx', width=0.7, top='pop', source=source, color='color_list', bottom=0)
     
     # Add box annotation of 5% population
     five_percent_box = BoxAnnotation(top=(population_df['population'].sum()*0.05), bottom=0, fill_alpha=0.1, fill_color='blue')
@@ -385,4 +436,6 @@ def cluster_population(population_df):
     labels = LabelSet(x='idx', y='pop', text='pop', x_offset=-22, y_offset=0, 
                       source=source, render_mode='canvas')
     p.add_layout(labels)
+    
+    output_notebook()
     show(p)
