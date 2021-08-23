@@ -3,8 +3,8 @@ from bokeh.models.tools import *
 from bokeh.models import ColumnDataSource, ColorBar, Title, Label, LabelSet, BoxAnnotation
 from bokeh.layouts import row
 from bokeh.io import output_notebook, export_png
-from bokeh.transform import linear_cmap
-from bokeh.palettes import Plasma256
+from bokeh.transform import linear_cmap, factor_cmap
+from bokeh.palettes import Plasma256, Set1
 import matplotlib.pyplot as plt
 import numpy as np
 import mdtraj as md
@@ -61,7 +61,7 @@ def RMSD_map(array, title='RMSD_map', ref_frame=0, save_dir=None):
         print('Sorry, only dimension reduced to 2D accepted.')
         
 def cluster_map(num_instances, dimred_method, clustering_method, index, 
-                threshold=None, save_dir=None):
+                threshold=None, exclude_neg_1=False, save_dir=None):
     """
     Displays differnet clusters in different colors, highlight the position 
     of cluster centers (if provided)
@@ -81,6 +81,10 @@ def cluster_map(num_instances, dimred_method, clustering_method, index,
         DESCRIPTION. The RMSD threshold for high dimensional clustering.
         Only use this parameter when the clusters are generated from high dimensioanl clustering.
         The default is None.
+    exclude_neg_1 : TYPE Bool, optional
+        DESCRIPTION. If True, exclude instances with label of -1 when plotting.
+        Only use this parameter when the clusters are generated from high dimensioanl clustering.
+        The default is False.
     save_dir : TYPE File path (string), optional
         DESCRIPTION. If specified, the plot will be saved to the given 
         directory. The default is None.
@@ -91,29 +95,32 @@ def cluster_map(num_instances, dimred_method, clustering_method, index,
 
     """
     
+    # Load files: feature space data, label array, center array(optional)
     results_dir = '/xspace/hl4212/results'
     instance_path = f'{results_dir}/dimensionality_reduction/dimreduct_{dimred_method}.npy'
     instance_array = np.load(instance_path)[:num_instances, :]
     if threshold != None:
         label_path = f'{results_dir}/high_dim_clustering/{dimred_method}_{clustering_method}_{index}_{threshold}_Labels.npy'
         label_array = np.load(label_path)
-    
     else:
         label_path = f'{results_dir}/clustering/{dimred_method}_{clustering_method}_{num_instances}_labels.npy'
-        label_array = np.load(label_path)[index]
-        
+        label_array = np.load(label_path)[index]   
+    
     try:
         if threshold != None:
             center_idx_path = f'{results_dir}/high_dim_clustering/{dimred_method}_{clustering_method}_{index}_{threshold}_CenterIdx.npy'
             center_idx_array = np.load(center_idx_path)
-            center_array = instance_array[center_idx_array]
-            
+            center_array = instance_array[center_idx_array]     
         else:
             center_path = f'{results_dir}/clustering/{dimred_method}_{clustering_method}_{num_instances}_ccenters.npy'
             center_array = np.load(center_path, allow_pickle=True)[index]
         
     except:
         pass
+    
+    if exclude_neg_1 == True:
+        instance_array = instance_array[np.where(label_array >= 0)]
+        label_array = label_array[np.where(label_array >= 0)]
         
     x = instance_array[:, 0].reshape(len(instance_array), )
     y = instance_array[:, 1].reshape(len(instance_array), )
@@ -123,29 +130,38 @@ def cluster_map(num_instances, dimred_method, clustering_method, index,
     else:
         total_cluster = len(np.unique(label_array))
         
+    # First plot the feature space data and color the points according to their labels
     source = ColumnDataSource(dict(x=x,y=y, label_array=label_array.astype(str)))
-    mapper = linear_cmap(field_name='label_array', palette=Plasma256,\
-                         low=min(label_array) ,high=max(label_array))
+    label_idx = np.unique(label_array)
+    mapper = factor_cmap('label_array', palette = Set1[len(label_idx)], factors=label_idx.astype(str))
+    
     p = figure(title=f'{dimred_method}_{clustering_method}_{num_instances}', 
                x_axis_label='dim1', 
                y_axis_label='dim2', 
                tools=[BoxZoomTool(), HoverTool(), PanTool(), ResetTool(), \
                       SaveTool(), WheelZoomTool(), BoxSelectTool(mode='append')],
+               plot_height = 800,
+               plot_width = 800
                )
     p.circle(x='x', y='y', line_color=mapper, fill_color=mapper,
-             source=source, alpha=0.5,size=3)
-    label = Label(x=150, y=10, x_units='screen', y_units='screen',
+             source=source, alpha=0.7,size=3, legend_field='label_array')
+    
+    # Add a label in the bottom middle of the plot, showing the total number of clusters
+    label = Label(x=200, y=10, x_units='screen', y_units='screen',
                  text=f'Total number of clusters: {total_cluster}',
                  border_line_color='black', border_line_alpha=1.0,text_line_height=1.5,
                  background_fill_color='White', text_font_size='20px')
     p.add_layout(label)
+    p.legend.orientation = "horizontal"
+    p.legend.location = "top_center"
     
+    # If cluster center provided, highlight the position of cluster centers, and label the index
     try:
         x_center = center_array[:, 0].reshape(len(center_array), )
         y_center = center_array[:, 1].reshape(len(center_array), )
         index_ = list(range(len(x_center)))
         ccsource = ColumnDataSource(data=dict(x=x_center, y=y_center, index_=index_))
-        p.triangle('x', 'y', line_color='green', fill_color='green', size=10, source=ccsource, 
+        p.triangle('x', 'y', line_color='white', fill_color='black', size=10, source=ccsource, 
                    legend_label = 'Cluster center (cluster index)')
         labels = LabelSet(x='x', y='y', text='index_', x_offset=5, y_offset=5, render_mode='canvas', source=ccsource,
                          background_fill_color='white', background_fill_alpha = 1, text_color = 'black',
@@ -157,6 +173,7 @@ def cluster_map(num_instances, dimred_method, clustering_method, index,
 
     output_notebook()
     show(p)
+    
     if save_dir != None:
         export_png(p, filename=f'{save_dir}/{dimred_method}_{clustering_method}_{index}.png')
         
