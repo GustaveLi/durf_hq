@@ -445,9 +445,12 @@ def cluster_population(population_df):
     
     p.vbar(x='idx', width=0.7, top='pop', source=source, color='color_list', bottom=0)
     
-    # Add box annotation of 5% population
-    five_percent_box = BoxAnnotation(top=(population_df['population'].sum()*0.05), bottom=0, fill_alpha=0.1, fill_color='blue')
+    # Add box annotation of 5% population (instances) & 30% population ('outliers')
+    five_percent_box = BoxAnnotation(top=(population_df['population'].sum()*0.05), bottom=0, fill_alpha=0.1, fill_color='firebrick')
     p.add_layout(five_percent_box)
+    
+    forty_percent_box = BoxAnnotation(bottom=(population_df['population'].sum()*0.3), top=(population_df['population'].sum()), fill_alpha=0.1, fill_color='gray')
+    p.add_layout(forty_percent_box)
     
     # Add labels on top of each bar
     labels = LabelSet(x='idx', y='pop', text='pop', x_offset=-22, y_offset=0, 
