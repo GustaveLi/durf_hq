@@ -10,6 +10,8 @@
 \usepackage[margin=2.8cm]{geometry}
 \usepackage{ragged2e}
 \usepackage{makecell}
+\usepackage{multirow}
+\usepackage{bm}
 
 \title{Clustering Molecular Structures for Next-generation Solar Cell Material Discovery}
 \author{Gustave Li}
@@ -120,7 +122,7 @@ With the aim of addressing the pitfalls of xyz data space, descriptors should be
 Each of the triad molecules consist of 207 atoms, thus each molecule is represented as a data point in a 621 (\(207 \times 3\)) dimension space. In such high dimensional space, data points are far sparser than that in lower dimensional spaces, thus making it harder to find the optimal clustering result. The difficulty caused by high dimensionality is referred to as \textit{the curse of dimensionality}\cite{GeronAurelien}. Although the dimensionality was reduced to 8 by finding descriptors of the molecular structure, visualization of the 8D descriptors is still unachievable. In the face of such situation, dimensionality reduction plays its role by reducing the dimensionality of dataset significantly (to 2 or 3 for visualization) while preserving the information from original dataset\cite{GlielmoAldo}.
 
 \subsubsection{Dimensioanlity Reduction Methods \& Hyperparameters}
-Dimensionality reduction was performed on both xyz feature space and the descriptors space. Linear(PCA) and non-linear(kPCA, tSNE) dimensionality reduction methods were implemented. Hyerparameters were tuned as recorded in Table \ref{table: dimreduct}.
+Dimensionality reduction was performed on both xyz feature space and the descriptors space. Linear(PCA) and non-linear(kPCA, tSNE) dimensionality reduction methods were implemented. Hyperparameters were tuned as recorded in Table \ref{table: dimreduct}.
 
 \begin{table}[H]
     \centering
@@ -140,11 +142,105 @@ Dimensionality reduction was performed on both xyz feature space and the descrip
 \end{table}
 
 \subsubsection{Dimensionality Reduction Results Inspection}
-The inspection was achieved by the \texttt{pyemma.plots.plot\_density} module, which plots the dimensionality reduction results on a 2D plain and colors the data points according to the density of that region.
+The inspection was achieved by the \texttt{pyemma.plots.plot\_density} module, which plots the dimensionality reduction results on a 2D plane and colors the data points according to the density of that region. Areas that are denser than others are likely to form meaningful clusters.
 
 \subsection{Clustering}
+Clustering divides the entire data into several distinct groups, whose elements are similar in the same group and vary between groups \cite{GlielmoAldo}. With the dimensionality reduced feature space prepared, clustering methods were implemented on the low dimensional data.  In order to explore suitable algorithms for triad molecule clustering in a vaster range, different categories of (yet common) clustering algorithms were applied, ranging from kMeans to HDBSCAN. In the meanwhile, different choices of hyperparameters were also explored and evaluated.
+
+\subsubsection{Clustering Methods \& Hyperparameters}
+
+\begin{table}[h!]
+    \centering
+    \caption{Clustering Methods \& Hyperparameters}
+    \begin{tabular}{p{.28\textwidth}|p{.3\textwidth}|p{.3\textwidth}}
+    \hline \hline
+        \textbf{Category} & \textbf{Method} & \textbf{Hyperparameters} \\
+        \hline
+        \multirow{2}{.3\textwidth}{Partitioning scheme} & KMeans & \texttt{n\_clusters: 6-10} \\
+        & KMedoids & \texttt{n\_clusters: 6-10} \par \texttt{init: k-medoids++} \\
+        \hline
+        Cluster-density based & Hierarchical density based spatial clustering of applications with noise (HDBSCAN) & \texttt{min\_cluster\_size: 10-100} \par \texttt{min\_samples: 1,10,100} \par \texttt{cluster\_selection\_epsilon: 1,10,100,500} \\
+        \hline
+        Probability density function & Gaussian mixture model (GMM) & \texttt{n\_components: 6-10} \par \texttt{n\_init: 10} \\
+        \hline \hline
+    \end{tabular}
+    \label{table: clustering methods}
+\end{table}
+
+\subsubsection{Clustering Results Inspection}
+We have prepared 2 feature spaces, performed dimensionality reduction with 3 methods and implemented 4 clustering algorithms on the data, which is 24 different machine learning combinations (pipelines). For each combination, different hyperparameters also generates different results. With such diversified results, a careful selection is very necessary before moving on to high dimensioanl space. Detailed descriptions of inspection criterion are listed in Table \ref{table: clustering inspection}.
+
+\begin{table}[H]
+    \centering
+    \caption{Clustering Results Inspection Methods}
+    \begin{tabular}{p{.38\textwidth}|p{.6\textwidth}}
+    \hline \hline
+        \textbf{Methods} & \textbf{Additional notes} \\
+        \hline
+        Cluster map & \multirow{2}{.6\textwidth}{Provides an intuitive view of how the feature space is divided, and how instances are distributed in each cluster} \\
+        Cluster population & \\
+        \hline
+        Akaike information criterion (AIC) & \multirow{4}{.6\textwidth}{\textbf{a)} AIC and BIC are specific for GMM models, while Inertia is only for KMeans and KMedoids models. \\ \textbf{b)} For comparison and inspection convenience, all the scoring parameters were scaled to range(0,10) before plotting. \\
+        \textbf{c)} Scoring evaluates the quality of clustering on a statistical perspective.} \\
+        Bayesian information criterion (BIC) & \\
+        Inertia & \\
+        Silhouette score & \\
+          & \\
+          & \\
+          & \\
+        \hline  
+        Pairwise RMSD & \multirow{4}{.6\textwidth}{\textbf{a)} The 1000 instances nearest to each cluster center are chosen for pairwise RMSD calculation \\ \textbf{b)} RMSD and Pearson R evaluates the similarity and differences between and within clusters.} \\
+        Pearson correlation coefficient & \\
+         & \\
+         & \\
+        \hline \hline
+          
+    \end{tabular}
+    \label{table: clustering inspection}
+\end{table}
+
+\paragraph{AIC \& BIC}
+AIC and BIC are criterion that select models among a finite set of models, they both introduce penalty for the number of parameters in the model to avoid overfitting \cite{wiki_BIC}. Akaike information criterion is defined as \cite{AIC}:
+\begin{equation}
+    \text{AIC}=-2\ln(\hat{L})+2k 
+    \label{Eq: AIC}
+\end{equation}
+\noindent where \(k\) is the number of estimated parameters in the model, and \(\hat{L}\) is the maximum value of the likelihood function of the model.
+
+BIC is closely related with AIC and it was derived a little bit later than AIC \cite{BIC}. Formally, Bayesian information criterion is defined as:
+\begin{equation}
+    \text{BIC}=-2\ln(\hat{L})+k\ln(n)
+    \label{Eq: BIC}
+\end{equation}
+\noindent \(k\) is the number of estimated parameters in the model, \(n\) is the sample size of a certain dataset, and \(\hat{L}\) is the maximum value of the likelihood function of the model.
+
+From the formulae of AIC and BIC, they only differ from their penalty term for model complexity, AIC has penalty form of \(2k\) and BIC is \(k\ln(n)\). The penalty term is larger in BIC than in AIC. Burnham \& Anderson pointed out that AIC can be derived in the same Bayesian framework as BIC, just by using different prior probabilities \cite{AIC_BIC_comparison}\cite{AIC_BIC_book}. Since the likelihood function is negative and the penalty term is positive, the model with lower AIC/BIC is preferred.
+
+\paragraph{Inertia}
+Inertia is a criterion that evaluates the cluster coherence generated by KMeans and KMedoids. For a clustering model with \(n\) samples and centroids \(\mu\) in set \(C\), inertia (or within-cluster sum-of-squares criterion) is defined as \cite{scikit-learn}:
+\begin{equation}
+    \text{inertia}=\sum_{i=0}^{n}\min_{\mu_{j} \in C} \left( \parallel x_i - \mu_j\parallel^2 \right)
+\end{equation}
+\noindent To further explain, inertia calculates the sum of distances between cluster center and each of their cluster members. More compact clusters will result in smaller inertia values, so the model with lower AIC/BIC is preferred.
+
+\paragraph{Silhouette score}
+Silhouette score measures how well an instance is inside its own cluster while away from other clusters. It considers both the distance within clusters and distance between different clusters \cite{scikit-learn}:
+\begin{equation}
+    s = \frac{b-a}{\max(a, b)}
+\end{equation}
+\noindent \(a\) is the mean distance between a sample and all other points in the same cluster, and \(b\) represents the mean distance between a sample and all other points in the next nearest cluster. A higher Silhouette Coefficient score relates to a model with better defined clusters. 
+
+\paragraph{RMSD}
+Root mean square deviation \( \rho(t) \) is a function that measures atom-wise difference and it can represent structure similarity. The RMSD as a function of time is calculated as:
+\begin{equation}
+    \rho(t)=\sqrt{\frac{1}{N}\sum_{i=1}^N\left(\bm{x}_i(t)-\bm{x}_i^\text{ref}\right)^2}
+\end{equation}
+\noindent where \(t\) is the time frame and \(N\) is the number of coordinates. It is the Euclidean distance in configuration space of the current configuration (possibly after optimal translation and rotation) from a reference configuration divided by \(\frac{1}{\sqrt{N}}\) \cite{scikit-learn}.
 
 \subsection{High-dimensioanl Clustering}
+Although clustering in the 2D reduced space will also generate labels for instances, information is lost when the dimensionality is reduced, raising the risk of membership errors. To ensure the structure information be preserved to its maximum, cluster centers were obtained by clustering in 2D space and cluster members were assigned in the high-dimensional feature space, which make use of RMSD to determine membership. A triad molecule that has RMSD smaller than a given threshold (set to 0.3-0.5), with respect to a cluster center, will be regarded as a member of that cluster. Instances that belong to none of the clusters are treated as exceptions. 
+
+The results are inspected by cluster maps and cluster populations. 
 
 \section{Results \& Discussion}
 
